@@ -127,3 +127,23 @@ lint: ensure-venv
 
 clean:
 	$(BASE_PYTHON) -c "import pathlib, shutil; excluded=[pathlib.Path('$(VENV_DIR)'), pathlib.Path('venv')]; skip=lambda p: any(p == root or root in p.parents for root in excluded); roots=[p for p in pathlib.Path('.').rglob('__pycache__') if not skip(p)]; [shutil.rmtree(p) for p in roots]; files=[p for p in pathlib.Path('.').rglob('*.pyc') if not skip(p)]; [p.unlink() for p in files]"
+	cargo clean 2>/dev/null || true
+	rm -rf coverage_report target/coverage
+
+# ---- Rust Workspace Targets ----
+rust-build:
+	cargo build --release
+
+rust-test:
+	cargo test --all-targets
+
+rust-coverage:
+	cargo llvm-cov --html --output-dir ./coverage_report
+	@echo "Coverage HTML report generated at ./coverage_report/html/index.html"
+
+rust-coverage-open:
+	cargo llvm-cov --html --open
+
+rust-clean:
+	cargo clean
+	rm -rf coverage_report target/coverage

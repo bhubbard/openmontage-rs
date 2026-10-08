@@ -1,0 +1,19 @@
+[package]
+name = "openmontage-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Core video production engine, timeline sequencer, pipeline orchestration, and audio mixing for OpenMontage"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+colored.workspace = true
+hound.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
