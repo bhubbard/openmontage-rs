@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>openmontage-rs — Agentic Video Production &amp; 6-Track NLE Timeline Engine in Rust | Brandon Hubbard</title>
+  <meta name="description" content="Open-source, agentic video production engine in pure Rust. Multi-stage pipeline DAGs, 6-track NLE timeline sequencer, shotlist pacing validator, cost ledger, and -12dB voiceover audio ducking." />
+  <link rel="canonical" href="https://code.brandonhubbard.com/openmontage-rs/" />
+  <meta property="og:title" content="openmontage-rs — Agentic Video Production &amp; NLE Timeline Engine in Rust" />
+  <meta property="og:description" content="Interactive 6-track NLE timeline studio, shotlist pacing &amp; slideshow-risk analyzer, multi-provider cost ledger, and empirical Rust vs Python benchmarks (up to 37.9x faster)." />
+  <meta property="og:url" content="https://code.brandonhubbard.com/openmontage-rs/" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NFEM8TN9ZM"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NFEM8TN9ZM');
+  </script>
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "openmontage-rs",
+    "description": "Open-source, agentic video production system in Rust — multi-stage pipeline orchestration, 6-track NLE timeline sequencing, shotlist pacing validation, and dynamic voiceover audio ducking.",
+    "codeRepository": "https://github.com/bhubbard/openmontage-rs",
+    "url": "https://code.brandonhubbard.com/openmontage-rs/",
+    "programmingLanguage": "Rust",
+    "runtimePlatform": "Rust 2021 Edition",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "author": {
+      "@type": "Person",
+      "name": "Brandon Hubbard",
+      "url": "https://brandonhubbard.com"
+    }
+  }
+  </script>
+
+  <!-- Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root, [data-theme="dark"] {
+      --bg-canvas: #0a0a0a;
+      --bg-surface: #121212;
+      --bg-elevated: #171717;
+      --bg-glass: rgba(10, 10, 10, 0.92);
+      --text-primary: #f5f5f5;
+      --text-secondary: #a3a3a3;
+      --text-muted: #737373;
+      --border-grid: #262626;
+      --border-strong: #404040;
+      --accent-primary: #3b82f6;
+      --accent-hover: #60a5fa;
+      --accent-soft: rgba(59, 130, 246, 0.12);
+      --status-pass: #16a34a;
+      --status-pass-bg: rgba(22, 163, 74, 0.14);
+      --status-warn: #ea580c;
+      --status-warn-bg: rgba(234, 88, 12, 0.14);
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    [data-theme="light"] {
+      --bg-canvas: #fafafa;
+      --bg-surface: #ffffff;
+      --bg-elevated: #f4f4f5;
+      --bg-glass: rgba(250, 250, 250, 0.92);
+      --text-primary: #0a0a0a;
+      --text-secondary: #52525b;
+      --text-muted: #71717a;
+      --border-grid: #d4d4d8;
+      --border-strong: #a1a1aa;
+      --accent-primary: #0055ff;
+      --accent-hover: #0044cc;
+      --accent-soft: rgba(0, 85, 255, 0.08);
+      --status-pass: #15803d;
+      --status-pass-bg: rgba(21, 128, 61, 0.1);
+      --status-warn: #c2410c;
+      --status-warn-bg: rgba(194, 65, 12, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border-radius: 0 !important;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Unified Site Header */
+    .site-header {
+      border-bottom: 1px solid var(--border-grid);
+      background: var(--bg-surface);
+    }
+
+    .site-header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.875rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .brand-mark {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: var(--accent-primary);
+    }
+
+    .site-nav {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .site-nav a {
+      color: var(--text-secondary);
+      transition: color 0.15s ease;
+    }
+
+    .site-nav a:hover, .site-nav a.active {
+      color: var(--accent-primary);
+    }
+
+    .theme-btn {
+      background: transparent;
+      border: 1px solid var(--border-grid);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 6px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .theme-btn:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+
+    /* Sticky Subnav */
+    .subnav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-grid);
+    }
+
+    .subnav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 44px;
+      overflow-x: auto;
+    }
+
+    .subnav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .subnav-links a {
+      color: var(--text-secondary);
+    }
+
+    .subnav-links a:hover {
+      color: var(--accent-primary);
+    }
+
+    /* Hero Section */
+    .hero {
+      border-bottom: 1px solid var(--border-grid);
+      padding: 56px 0 48px;
+      background:
+        linear-gradient(to right, var(--border-grid) 1px, transparent 1px) 0 0 / 48px 48px,
+        linear-gradient(to bottom, var(--border-grid) 1px, transparent 1px) 0 0 / 48px 48px;
+      background-color: var(--bg-canvas);
+    }
+
+    .hero-inner {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-grid);
+      padding: 40px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-primary);
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-primary);
+      padding: 4px 10px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.25rem, 4.5vw, 3.75rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      margin-bottom: 16px;
+    }
+
+    .hero-subtitle {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      max-width: 72ch;
+      margin-bottom: 28px;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 20px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    /* Telemetry Strip */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      border-top: 1px solid var(--border-grid);
+      border-left: 1px solid var(--border-grid);
+    }
+
+    .telemetry-cell {
+      padding: 18px 20px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-grid);
+      border-bottom: 1px solid var(--border-grid);
+    }
+
+    .telemetry-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .telemetry-value {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .telemetry-sub {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--status-pass);
+      margin-top: 4px;
+    }
+
+    /* Sections */
+    .section {
+      padding: 64px 0;
+      border-bottom: 1px solid var(--border-grid);
+    }
+
+    .section-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .section-index {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-primary);
+      margin-bottom: 6px;
+    }
+
+    .section-title {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    /* NLE Studio Shell */
+    .nle-shell {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      border: 1px solid var(--border-grid);
+      background: var(--bg-surface);
+    }
+
+    @media (max-width: 980px) {
+      .nle-shell {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .nle-controls {
+      border-right: 1px solid var(--border-grid);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .select-input {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      padding: 9px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-grid);
+      color: var(--text-primary);
+      width: 100%;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-primary);
+      cursor: pointer;
+    }
+
+    .pacing-readout {
+      border: 1px solid var(--border-grid);
+      background: var(--bg-canvas);
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .readout-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-grid);
+      padding-bottom: 4px;
+    }
+
+    .readout-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .badge-pass {
+      display: inline-block;
+      padding: 2px 6px;
+      background: var(--status-pass-bg);
+      color: var(--status-pass);
+      font-weight: 700;
+    }
+
+    .badge-warn {
+      display: inline-block;
+      padding: 2px 6px;
+      background: var(--status-warn-bg);
+      color: var(--status-warn);
+      font-weight: 700;
+    }
+
+    .nle-stage {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      background: var(--bg-canvas);
+    }
+
+    .stage-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-grid);
+      background: var(--bg-surface);
+      font-family: var(--font-mono);
+      font-size: 0.73rem;
+      gap: 8px;
+    }
+
+    /* Pipeline Stage Gate Strip */
+    .stage-gates-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      border-bottom: 1px solid var(--border-grid);
+      background: var(--bg-elevated);
+    }
+
+    .gate-cell {
+      padding: 12px 14px;
+      border-right: 1px solid var(--border-grid);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+    }
+
+    .gate-cell:last-child {
+      border-right: none;
+    }
+
+    .gate-title {
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .gate-meta {
+      color: var(--text-secondary);
+      font-size: 0.68rem;
+    }
+
+    canvas#nle-canvas {
+      width: 100%;
+      height: 360px;
+      display: block;
+      cursor: ew-resize;
+      background:
+        linear-gradient(to right, rgba(59, 130, 246, 0.05) 1px, transparent 1px) 0 0 / 40px 40px;
+    }
+
+    /* Module Cards */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .filter-btn {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-grid);
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .filter-btn.active, .filter-btn:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+      background: var(--accent-soft);
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      border-top: 1px solid var(--border-grid);
+      border-left: 1px solid var(--border-grid);
+    }
+
+    @media (max-width: 500px) {
+      .module-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .module-card {
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-grid);
+      border-bottom: 1px solid var(--border-grid);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .module-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .module-name {
+      font-family: var(--font-mono);
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: var(--accent-primary);
+    }
+
+    .module-tag {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      border: 1px solid var(--border-grid);
+      padding: 3px 8px;
+      background: var(--bg-canvas);
+    }
+
+    .module-desc {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .module-code {
+      font-family: var(--font-mono);
+      font-size: 0.73rem;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-grid);
+      padding: 10px 12px;
+      color: var(--text-primary);
+      overflow-x: auto;
+    }
+
+    /* Benchmarks Table */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-grid);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-grid);
+      border-right: 1px solid var(--border-grid);
+    }
+
+    th {
+      background: var(--bg-elevated);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+    }
+
+    td {
+      background: var(--bg-surface);
+    }
+
+    td.mono {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    .speedup-pill {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      background: var(--status-pass-bg);
+      color: var(--status-pass);
+      border: 1px solid var(--status-pass);
+    }
+
+    /* Code Blocks */
+    .code-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+      gap: 24px;
+    }
+
+    @media (max-width: 600px) {
+      .code-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .code-panel {
+      border: 1px solid var(--border-grid);
+      background: var(--bg-surface);
+    }
+
+    .code-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-grid);
+      background: var(--bg-elevated);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+
+    .copy-btn {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-grid);
+      color: var(--text-primary);
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+
+    pre.code-body {
+      padding: 18px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+    }
+
+    /* Footer */
+    .site-footer {
+      padding: 40px 0;
+      background: var(--bg-surface);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Unified Brandon Hubbard Site Header -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="https://brandonhubbard.com" class="brand-link">
+        <span class="brand-mark"></span>
+        <span>Brandon Hubbard // Systems Engineering</span>
+      </a>
+      <nav class="site-nav" aria-label="Global Navigation">
+        <a href="https://brandonhubbard.com">Home</a>
+        <a href="https://brandonhubbard.com/resume/">Resume</a>
+        <a href="https://code.brandonhubbard.com/" class="active">Code Portal</a>
+        <a href="https://github.com/bhubbard/openmontage-rs" target="_blank" rel="noopener">GitHub</a>
+        <button class="theme-btn" id="theme-toggle" type="button" aria-label="Toggle color theme">LIGHT // DARK</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Sticky Subnav -->
+  <div class="subnav">
+    <div class="subnav-inner">
+      <div class="subnav-links">
+        <a href="#studio">01. 6-Track NLE &amp; Pacing Studio</a>
+        <a href="#architecture">02. Crate &amp; Pipeline Architecture</a>
+        <a href="#benchmarks">03. Empirical Benchmarks</a>
+        <a href="#quickstart">04. CLI &amp; SDK Quickstart</a>
+      </div>
+      <div class="subnav-links">
+        <a href="https://github.com/bhubbard/openmontage-rs/blob/main/BENCHMARKS.md" target="_blank" rel="noopener">BENCHMARKS.md ↗</a>
+        <a href="https://github.com/bhubbard/openmontage-rs" target="_blank" rel="noopener">Source ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-inner">
+        <div class="eyebrow">RUST 2021 // 6-TRACK NLE SEQUENCER // STAGE-GATE PIPELINE DAGS // -12dB AUDIO DUCKING</div>
+        <h1>openmontage-rs</h1>
+        <p class="hero-subtitle">
+          Open-source, agentic video production engine and non-linear timeline sequencer in pure Rust (<code>openmontage-core</code> and <code>openmontage-cli</code>).
+          Orchestrates multi-stage production DAGs (<code>cinematic</code>, <code>animated-explainer</code>, <code>avatar-spokesperson</code>), validates primary video cut overlaps and camera motion variety, tracks multi-provider budgets, and masters 44.1 kHz voiceover + music stems to <code>-16.0 LUFS</code>.
+        </p>
+        <div class="btn-row">
+          <a href="#studio" class="btn btn-primary">Launch 6-Track NLE Studio ↓</a>
+          <a href="https://github.com/bhubbard/openmontage-rs" class="btn" target="_blank" rel="noopener">View Source on GitHub ↗</a>
+          <a href="https://github.com/bhubbard/openmontage-rs/blob/main/BENCHMARKS.md" class="btn" target="_blank" rel="noopener">Read Benchmark Report ↗</a>
+        </div>
+
+        <div class="telemetry-grid">
+          <div class="telemetry-cell">
+            <div class="telemetry-label">Timeline Validation Speedup</div>
+            <div class="telemetry-value">37.9x</div>
+            <div class="telemetry-sub">48.0 µs (1,000 Clips) vs Python</div>
+          </div>
+          <div class="telemetry-cell">
+            <div class="telemetry-label">NLE Track Channels</div>
+            <div class="telemetry-value">6 Tracks</div>
+            <div class="telemetry-sub">Video, BRoll, VO, Music, SFX, Subs</div>
+          </div>
+          <div class="telemetry-cell">
+            <div class="telemetry-label">Shot Framing &amp; Motion</div>
+            <div class="telemetry-value">8 × 9</div>
+            <div class="telemetry-sub">8 Shot Types × 9 Camera Motions</div>
+          </div>
+          <div class="telemetry-cell">
+            <div class="telemetry-label">Pacing Analysis Speedup</div>
+            <div class="telemetry-value">34.5x</div>
+            <div class="telemetry-sub">14.2 µs (500 Shots) Slideshow Gate</div>
+          </div>
+          <div class="telemetry-cell">
+            <div class="telemetry-label">44.1kHz Ducking + LUFS</div>
+            <div class="telemetry-value">31.7x</div>
+            <div class="telemetry-sub">1.84 ms (60s Audio) + Soft Limiter</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01. Interactive 6-Track NLE Timeline, Pacing Validator & Cost Simulator -->
+  <section class="section" id="studio">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <div class="section-index">01 // Interactive Sequencer, Pacing Gate &amp; Budget Ledger</div>
+          <h2 class="section-title">6-Track NLE Timeline &amp; Shotlist Pacing Studio</h2>
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary);">
+          Simulating <code>Timeline</code> + <code>PacingValidator</code> + <code>PipelineRegistry</code> + <code>CostTracker</code>
+        </div>
+      </div>
+
+      <div class="nle-shell">
+        <div class="nle-controls">
+          <div class="control-group">
+            <label class="control-label" for="pipeline-select">
+              <span>1. Production Pipeline DAG</span>
+              <span>--pipeline</span>
+            </label>
+            <select id="pipeline-select" class="select-input">
+              <option value="cinematic">Cinematic Narrative (4 Stages, $3.30 base)</option>
+              <option value="animated-explainer">Animated Explainer (3 Stages, $0.50 base)</option>
+              <option value="avatar-spokesperson">Avatar Spokesperson (3 Stages, $1.35 base)</option>
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="control-group">
+              <label class="control-label" for="aspect-select">
+                <span>2. Aspect Ratio</span>
+                <span>AspectRatio</span>
+              </label>
+              <select id="aspect-select" class="select-input">
+                <option value="16:9">16:9 (1920×1080)</option>
+                <option value="9:16">9:16 (1080×1920)</option>
+                <option value="1:1">1:1 (1080×1080)</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label" for="motion-preset">
+                <span>3. Camera Pacing Profile</span>
+                <span>Shotlist</span>
+              </label>
+              <select id="motion-preset" class="select-input">
+                <option value="dynamic">Dynamic Cinema (High Variety)</option>
+                <option value="fast">Rapid Cut Montage (&lt;1.5s Cuts)</option>
+                <option value="static">Static Slideshow (3+ Static Shots)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="shots-range">
+              <span>4. Shot Count &amp; Timeline Clips</span>
+              <span id="shots-val">8 Shots (28.0s)</span>
+            </label>
+            <input type="range" id="shots-range" min="4" max="16" step="1" value="8" />
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="duck-range">
+              <span>5. Voiceover Music Ducking Attenuation</span>
+              <span id="duck-val">-12.0 dB (0.25x gain)</span>
+            </label>
+            <input type="range" id="duck-range" min="-24.0" max="0.0" step="1.0" value="-12.0" />
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="budget-range">
+              <span>6. Production Budget Cap (USD)</span>
+              <span id="budget-val">$10.00 USD</span>
+            </label>
+            <input type="range" id="budget-range" min="2.0" max="25.0" step="0.5" value="10.0" />
+          </div>
+
+          <div class="pacing-readout" aria-live="polite">
+            <div class="readout-row">
+              <span>Primary Video Overlaps:</span>
+              <span class="badge-pass" id="stat-overlap">0 Overlaps (Valid)</span>
+            </div>
+            <div class="readout-row">
+              <span>Slideshow Risk Gate:</span>
+              <span class="badge-pass" id="stat-slideshow">LOW (Dynamic Camera)</span>
+            </div>
+            <div class="readout-row">
+              <span>Framing Variety Score:</span>
+              <strong id="stat-variety">100% (4+ ShotTypes)</strong>
+            </div>
+            <div class="readout-row">
+              <span>Avg Shot // Total Duration:</span>
+              <strong id="stat-duration">3.50s // 28.0s</strong>
+            </div>
+            <div class="readout-row">
+              <span>Estimated Cost // Remaining:</span>
+              <span class="badge-pass" id="stat-cost">$3.95 // +$6.05 USD</span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <button type="button" class="btn btn-primary" id="play-timeline-btn" style="justify-content: center; padding: 10px 8px;">
+              ▶ Scrub Playhead
+            </button>
+            <button type="button" class="btn" id="export-manifest-btn" style="justify-content: center; padding: 10px 8px;">
+              Manifest .JSON ↓
+            </button>
+            <button type="button" class="btn" id="export-shots-btn" style="justify-content: center; padding: 10px 8px;">
+              Shots .JSON ↓
+            </button>
+          </div>
+        </div>
+
+        <div class="nle-stage">
+          <div class="stage-bar">
+            <span>PIPELINE STAGE-GATE DAG // <strong id="pipeline-title">CINEMATIC NARRATIVE (v1.0.0)</strong></span>
+            <span id="resolution-readout" style="color: var(--status-pass);">1920×1080 @ 30.0 FPS // -16.0 LUFS Master</span>
+          </div>
+
+          <div class="stage-gates-strip" id="stage-gates-strip"></div>
+
+          <canvas id="nle-canvas" width="920" height="360"></canvas>
+
+          <div class="stage-bar">
+            <span>CLI Equivalent: <code id="cli-preview" style="color: var(--accent-primary);">openmontage plan -s "Reel" -p cinematic --budget 10.0 -o playbook.json</code></span>
+            <span id="playhead-readout">Playhead: <code>00:00.000</code></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02. Crate & Pipeline Architecture Explorer -->
+  <section class="section" id="architecture">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <div class="section-index">02 // Modular Rust Workspace</div>
+          <h2 class="section-title">openmontage-core &amp; openmontage-cli Architecture</h2>
+        </div>
+      </div>
+
+      <div class="filter-bar" id="module-filters">
+        <button type="button" class="filter-btn active" data-filter="all">All 8 Modules &amp; CLI</button>
+        <button type="button" class="filter-btn" data-filter="timeline">NLE Timeline &amp; Pacing</button>
+        <button type="button" class="filter-btn" data-filter="pipeline">Pipeline DAGs, Manifest &amp; Cost</button>
+        <button type="button" class="filter-btn" data-filter="audio">Audio Ducking &amp; CLI</button>
+      </div>
+
+      <div class="module-grid" id="module-grid">
+        <article class="module-card" data-category="timeline">
+          <div>
+            <div class="module-top">
+              <span class="module-name">openmontage_core::timeline</span>
+              <span class="module-tag">6-Track NLE Sequencer</span>
+            </div>
+          </div>
+          <p class="module-desc">
+            Millisecond-accurate non-linear editing timeline (<code>Timeline</code>, <code>TimelineClip</code>) across 6 track types (<code>Video</code>, <code>BRoll</code>, <code>Voiceover</code>, <code>Music</code>, <code>SoundEffects</code>, <code>Subtitles</code>) with <code>validate_primary_video_overlaps()</code>.
+          </p>
+          <div class="module-code">assert!(timeline.validate_primary_video_overlaps());</div>
+        </article>
+
+        <article class="module-card" data-category="timeline">
+          <div>
+            <div class="module-top">
+              <span class="module-name">openmontage_core::shot</span>
+              <span class="module-tag">Pacing &amp; Slideshow Gate</span>
+            </div>
+          </div>
+          <p class="module-desc">
+            Analyzes sequences of <code>Shot</code> definitions across 8 <code>ShotType</code> framings and 9 <code>CameraMotion</code> trajectories, computing average cut length, short/long cut counts, consecutive static slideshow risk, and framing variety score.
+          </p>
+          <div class="module-code">let report = PacingValidator::analyze(&amp;shots); assert!(!report.slideshow_risk);</div>
+        </article>
+
+        <article class="module-card" data-category="pipeline">
+          <div>
+            <div class="module-top">
+              <span class="module-name">openmontage_core::pipeline</span>
+              <span class="module-tag">Stage-Gate DAGs</span>
+            </div>
+          </div>
+          <p class="module-desc">
+            Built-in and YAML-configurable production pipelines (<code>cinematic</code>, <code>animated-explainer</code>, <code>avatar-spokesperson</code>) with per-stage required inputs, artifacts, automated verification gates, and cost estimates.
+          </p>
+          <div class="module-code">let reg = PipelineRegistry::standard_pipelines();</div>
+        </article>
+
+        <article class="module-card" data-category="audio">
+          <div>
+            <div class="module-top">
+              <span class="module-name">openmontage_core::audio</span>
+              <span class="module-tag">-12dB Ducking &amp; LUFS</span>
+            </div>
+          </div>
+          <p class="module-desc">
+            Broadcast audio stem mixer (<code>AudioMixer::mix_tracks</code>) with a 100 ms sliding-window voiceover activity detector that attenuates music stems by <code>ducking_db</code> (<code>-12.0 dB</code>) and normalizes the master to <code>-16.0 LUFS</code> with soft-knee limiting.
+          </p>
+          <div class="module-code">let mixed = AudioMixer::mix_tracks(&amp;vo, &amp;music, &amp;AudioMixConfig::default());</div>
+        </article>
+
+        <article class="module-card" data-category="pipeline">
+          <div>
+            <div class="module-top">
+              <span class="module-name">openmontage_core::cost</span>
+              <span class="module-tag">Multi-Provider Ledger</span>
+            </div>
+          </div>
+          <p class="module-desc">
+            Tracks LLM tokens, video diffusion seconds, and TTS character spend across providers (<code>CostTracker</code>, <code>CostRecord</code>, <code>CostSummary</code>) with real-time budget overrun gates.
+          </p>
+          <div class="module-code">tracker.record("VideoDiffusion", "Shots", 32.0, "seconds", 0.12);</div>
+        </article>
+
+        <article class="module-card" data-category="pipeline">
+          <div>
+            <div class="module-top">
+              <span class="module-name">openmontage_core::manifest</span>
+              <span class="module-tag">Playbook Serialization</span>
+            </div>
+          </div>
+          <p class="module-desc">
+            Serializes and loads reproducible <code>ProductionManifest</code> playbooks and <code>RenderedAsset</code> inventories to pretty-printed JSON.
+          </p>
+          <div class="module-code">manifest.save_to_file("playbook.json")?;</div>
+        </article>
+
+        <article class="module-card" data-category="timeline">
+          <div>
+            <div class="module-top">
+              <span class="module-name">openmontage_core::config</span>
+              <span class="module-tag">Aspect Ratio &amp; Config</span>
+            </div>
+          </div>
+          <p class="module-desc">
+            Strongly-typed <code>ProductionConfig</code> and <code>AspectRatio</code> (<code>16:9</code> Landscape, <code>9:16</code> Portrait, <code>1:1</code> Square) resolution calculators.
+          </p>
+          <div class="module-code">let (w, h) = AspectRatio::Landscape16x9.dimensions(1080); // (1920, 1080)</div>
+        </article>
+
+        <article class="module-card" data-category="audio">
+          <div>
+            <div class="module-top">
+              <span class="module-name">openmontage-cli</span>
+              <span class="module-tag">6 CLI Subcommands</span>
+            </div>
+          </div>
+          <p class="module-desc">
+            The <code>openmontage</code> command-line interface supporting <code>plan</code>, <code>render</code>, <code>pipelines</code>, <code>validate</code>, <code>cost</code>, and <code>bench</code>.
+          </p>
+          <div class="module-code">openmontage bench --clips 500 --sample-rate 44100</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03. Empirical Benchmarks -->
+  <section class="section" id="benchmarks">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <div class="section-index">03 // Verified Performance Telemetry</div>
+          <h2 class="section-title">Empirical Benchmarks: openmontage-rs vs Reference Python Pipeline</h2>
+        </div>
+        <a href="https://github.com/bhubbard/openmontage-rs/blob/main/BENCHMARKS.md" class="btn" target="_blank" rel="noopener">Full BENCHMARKS.md Report ↗</a>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Subsystem / Kernel</th>
+              <th>Rust Module</th>
+              <th>Workload</th>
+              <th>openmontage-rs (Rust)</th>
+              <th>Reference Python Pipeline</th>
+              <th>Speedup &amp; Engineering Advantage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>NLE Timeline Validation</strong></td>
+              <td class="mono">timeline::Timeline</td>
+              <td>1,000 clips primary video overlap check</td>
+              <td class="mono"><strong>48.0 µs</strong></td>
+              <td class="mono">1.82 ms (<code>moviepy</code>)</td>
+              <td><span class="speedup-pill">37.9x faster</span> + Zero-copy slice sort</td>
+            </tr>
+            <tr>
+              <td><strong>Pipeline DAG Deserialization</strong></td>
+              <td class="mono">pipeline::PipelineRegistry</td>
+              <td>4-stage YAML pipeline &amp; stage-gate parse</td>
+              <td class="mono"><strong>62.0 µs</strong></td>
+              <td class="mono">2.15 ms (<code>PyYAML</code>)</td>
+              <td><span class="speedup-pill">34.7x faster</span> + Strongly-typed stage gates</td>
+            </tr>
+            <tr>
+              <td><strong>Shotlist Pacing &amp; Variety</strong></td>
+              <td class="mono">shot::PacingValidator</td>
+              <td>500 shots slideshow-risk &amp; framing variety</td>
+              <td class="mono"><strong>14.2 µs</strong></td>
+              <td class="mono">490.0 µs (Python validator)</td>
+              <td><span class="speedup-pill">34.5x faster</span> + O(N) single-pass scan</td>
+            </tr>
+            <tr>
+              <td><strong>Manifest &amp; Cost Ledger</strong></td>
+              <td class="mono">manifest + cost</td>
+              <td>Playbook JSON + multi-provider cost summary</td>
+              <td class="mono"><strong>19.0 µs</strong></td>
+              <td class="mono">610.0 µs (Python JSON)</td>
+              <td><span class="speedup-pill">32.1x faster</span> + Deterministic budget gate</td>
+            </tr>
+            <tr>
+              <td><strong>44.1 kHz Audio Ducking + LUFS</strong></td>
+              <td class="mono">audio::AudioMixer</td>
+              <td>60s @ 44.1kHz 100ms window ducking + <code>-16 LUFS</code></td>
+              <td class="mono"><strong>1.84 ms</strong></td>
+              <td class="mono">58.40 ms (<code>pydub</code> + <code>numpy</code>)</td>
+              <td><span class="speedup-pill">31.7x faster</span> + Soft-knee <code>tanh</code> limiter</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04. CLI & Rust SDK Quickstart -->
+  <section class="section" id="quickstart">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <div class="section-index">04 // Reproducible Workflows</div>
+          <h2 class="section-title">CLI &amp; Rust SDK Quickstart</h2>
+        </div>
+      </div>
+
+      <div class="code-grid">
+        <div class="code-panel">
+          <div class="code-panel-header">
+            <span>TERMINAL // CLI PLANNING, VALIDATION &amp; AUDIO MIXING</span>
+            <button type="button" class="copy-btn" data-copy="cli-code">Copy</button>
+          </div>
+          <pre class="code-body" id="cli-code"># Clone and run all workspace unit &amp; integration tests
+git clone https://github.com/bhubbard/openmontage-rs.git
+cd openmontage-rs
+cargo test --workspace --release
+
+# 1. Inspect available production pipelines and stage gates
+cargo run --release -p openmontage-cli -- pipelines
+
+# 2. Generate a cinematic production playbook with a $10 budget cap
+cargo run --release -p openmontage-cli -- plan \
+  --script "Autonomous Rust Video Engine" \
+  --pipeline cinematic --budget 10.0 --output playbook.json
+
+# 3. Run the 500-clip NLE timeline &amp; 44.1 kHz audio mixing benchmark
+cargo run --release -p openmontage-cli -- bench --clips 500 --sample-rate 44100</pre>
+        </div>
+
+        <div class="code-panel">
+          <div class="code-panel-header">
+            <span>RUST SDK // NLE TIMELINE, PACING VALIDATOR &amp; MIXER</span>
+            <button type="button" class="copy-btn" data-copy="sdk-code">Copy</button>
+          </div>
+          <pre class="code-body" id="sdk-code">use openmontage_core::{
+    AudioMixConfig, AudioMixer, CameraMotion, PacingValidator, Shot, ShotType,
+    Timeline, TimelineClip, TrackType,
+};
+
+fn main() {
+    // 1. Assemble a non-overlapping primary video timeline
+    let mut tl = Timeline::new("Launch Reel", 30.0);
+    tl.add_clip(TimelineClip {
+        id: "shot_1".into(),
+        track_type: TrackType::Video,
+        source_path: "intro.mp4".into(),
+        in_point_ms: 0,
+        out_point_ms: 3500,
+        timeline_start_ms: 0,
+        volume: 1.0,
+        opacity: 1.0,
+    });
+    assert!(tl.validate_primary_video_overlaps());
+
+    // 2. Validate camera motion pacing &amp; framing variety
+    let shots = vec![Shot {
+        id: "s1".into(),
+        shot_type: ShotType::AerialDrone,
+        motion: CameraMotion::Orbit,
+        description: "Establishing shot".into(),
+        duration_seconds: 3.5,
+        visual_prompt: "Aerial sunrise".into(),
+    }];
+    let report = PacingValidator::analyze(&amp;shots);
+    assert!(!report.slideshow_risk);
+}</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>openmontage-rs</strong> // Agentic Video Production &amp; 6-Track NLE Timeline Engine in Rust // Apache-2.0
+      </div>
+      <div style="display: flex; gap: 20px;">
+        <a href="https://code.brandonhubbard.com/">← Back to Code Portal</a>
+        <a href="https://github.com/bhubbard/openmontage-rs" target="_blank" rel="noopener">GitHub Repository ↗</a>
+        <a href="https://github.com/bhubbard/openmontage-rs/blob/main/BENCHMARKS.md" target="_blank" rel="noopener">Benchmarks ↗</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive 6-Track NLE Timeline & Pacing Studio Script -->
+  <script>
+    (function() {
+      // Theme Toggle
+      const htmlEl = document.documentElement;
+      const themeBtn = document.getElementById('theme-toggle');
+      const savedTheme = localStorage.getItem('bh-theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        htmlEl.setAttribute('data-theme', savedTheme);
+      }
+      themeBtn.addEventListener('click', () => {
+        const next = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        htmlEl.setAttribute('data-theme', next);
+        localStorage.setItem('bh-theme', next);
+        drawTimeline();
+      });
+
+      // Module Filter Buttons
+      const filterBtns = document.querySelectorAll('#module-filters .filter-btn');
+      const moduleCards = document.querySelectorAll('#module-grid .module-card');
+      filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          filterBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const cat = btn.getAttribute('data-filter');
+          moduleCards.forEach(card => {
+            if (cat === 'all' || card.getAttribute('data-category') === cat) {
+              card.style.display = 'flex';
+            } else {
+              card.style.display = 'none';
+            }
+          });
+        });
+      });
+
+      // Copy Buttons
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.getAttribute('data-copy');
+          const el = document.getElementById(targetId);
+          if (el && navigator.clipboard) {
+            navigator.clipboard.writeText(el.innerText).then(() => {
+              const orig = btn.innerText;
+              btn.innerText = 'COPIED';
+              setTimeout(() => { btn.innerText = orig; }, 1400);
+            });
+          }
+        });
+      });
+
+      // --- Exact Port of PipelineRegistry, Timeline, PacingValidator & CostTracker ---
+      const PIPELINES = {
+        'cinematic': {
+          name: 'Cinematic Narrative',
+          version: '1.0.0',
+          stages: [
+            { name: '1. Script & Treatment', gate: 'plot_hole_check', cost: 0.10 },
+            { name: '2. Storyboard & Shotlist', gate: 'variety_check', cost: 0.50 },
+            { name: '3. Video Generation', gate: 'motion_stability_check', cost: 2.50 },
+            { name: '4. Assembly & Audio Mix', gate: 'lufs_broadcast_standard', cost: 0.20 }
+          ]
+        },
+        'animated-explainer': {
+          name: 'Animated Explainer',
+          version: '1.0.0',
+          stages: [
+            { name: '1. Concept & Script', gate: 'pacing_wpm_check', cost: 0.05 },
+            { name: '2. Voiceover Synthesis', gate: 'pronunciation_check', cost: 0.15 },
+            { name: '3. Motion Graphics', gate: 'sync_timing_check', cost: 0.30 }
+          ]
+        },
+        'avatar-spokesperson': {
+          name: 'Avatar Spokesperson',
+          version: '1.0.0',
+          stages: [
+            { name: '1. Dialogue Prep', gate: 'audio_quality_check', cost: 0.10 },
+            { name: '2. Avatar Synthesis', gate: 'lip_sync_confidence_check', cost: 1.20 },
+            { name: '3. Branded Overlay', gate: 'safe_zone_check', cost: 0.05 }
+          ]
+        }
+      };
+
+      const SHOT_TYPES = ['Wide', 'Medium', 'CloseUp', 'AerialDrone', 'OverTheShoulder', 'Macro', 'ExtremeCloseUp', 'Pov'];
+      const MOTIONS_DYNAMIC = ['Orbit', 'Tracking', 'PanLeft', 'ZoomIn', 'TiltUp', 'PanRight', 'ZoomOut', 'Static'];
+
+      const pipelineEl = document.getElementById('pipeline-select');
+      const aspectEl = document.getElementById('aspect-select');
+      const presetEl = document.getElementById('motion-preset');
+      const shotsEl = document.getElementById('shots-range');
+      const duckEl = document.getElementById('duck-range');
+      const budgetEl = document.getElementById('budget-range');
+      const canvas = document.getElementById('nle-canvas');
+      const ctx = canvas.getContext('2d');
+
+      let currentShots = [];
+      let currentClips = [];
+      let totalDurationMs = 28000;
+      let playheadMs = 6400;
+      let isPlaying = false;
+
+      function rebuildProduction() {
+        const pipeId = pipelineEl.value;
+        const pipe = PIPELINES[pipeId];
+        const aspect = aspectEl.value;
+        const preset = presetEl.value;
+        const shotCount = parseInt(shotsEl.value, 10);
+        const duckDb = parseFloat(duckEl.value);
+        const budgetUsd = parseFloat(budgetEl.value);
+
+        // Render Stage Gates Strip
+        document.getElementById('pipeline-title').textContent = `${pipe.name.toUpperCase()} (v${pipe.version})`;
+        const stripEl = document.getElementById('stage-gates-strip');
+        stripEl.innerHTML = pipe.stages.map(s => `
+          <div class="gate-cell">
+            <div class="gate-title">${s.name}</div>
+            <div class="gate-meta">Gate: <code>${s.gate}</code> // $${s.cost.toFixed(2)}</div>
+          </div>
+        `).join('');
+
+        // Aspect Ratio dimensions (mirrors AspectRatio::dimensions(1080))
+        const dims = aspect === '16:9' ? '1920×1080' : (aspect === '9:16' ? '1080×1920' : '1080×1080');
+        document.getElementById('resolution-readout').textContent = `${dims} @ 30.0 FPS // -16.0 LUFS Master`;
+
+        // Build Shotlist & Timeline Clips
+        currentShots = [];
+        currentClips = [];
+        let cursorMs = 0;
+
+        for (let i = 0; i < shotCount; i++) {
+          let durSec = 3.5;
+          let motion = MOTIONS_DYNAMIC[i % MOTIONS_DYNAMIC.length];
+          let shotType = SHOT_TYPES[i % SHOT_TYPES.length];
+
+          if (preset === 'fast') {
+            durSec = i % 2 === 0 ? 1.2 : 1.8;
+          } else if (preset === 'static') {
+            durSec = 4.0;
+            motion = 'Static';
+            shotType = i % 2 === 0 ? 'Wide' : 'Medium';
+          } else {
+            durSec = 2.8 + (i % 3) * 0.7;
+          }
+
+          const durMs = Math.round(durSec * 1000);
+          currentShots.push({
+            id: `shot_${i + 1}`,
+            shot_type: shotType,
+            motion,
+            description: `${shotType} (${motion})`,
+            duration_seconds: Number(durSec.toFixed(2)),
+            visual_prompt: `${pipe.name} sequence shot ${i + 1}`
+          });
+
+          // Track 0: Primary Video Clip
+          currentClips.push({
+            id: `vid_${i + 1}`,
+            track_type: 'Video',
+            label: `S${i + 1}: ${shotType}`,
+            start_ms: cursorMs,
+            end_ms: cursorMs + durMs
+          });
+
+          // Track 1: B-Roll Cutaways on odd shots
+          if (i % 2 === 1) {
+            currentClips.push({
+              id: `broll_${i + 1}`,
+              track_type: 'BRoll',
+              label: `B-Roll ${motion}`,
+              start_ms: cursorMs + 300,
+              end_ms: cursorMs + durMs - 200
+            });
+          }
+
+          // Track 2: Voiceover segments (with gaps so ducking envelope is visible)
+          if (i % 3 !== 2) {
+            currentClips.push({
+              id: `vo_${i + 1}`,
+              track_type: 'Voiceover',
+              label: `VO Cue #${i + 1}`,
+              start_ms: cursorMs + 200,
+              end_ms: cursorMs + durMs - 350
+            });
+          }
+
+          // Track 4: SFX Transition Whooshes at cut boundaries
+          if (i > 0) {
+            currentClips.push({
+              id: `sfx_${i}`,
+              track_type: 'SoundEffects',
+              label: 'SFX Cut',
+              start_ms: Math.max(0, cursorMs - 250),
+              end_ms: cursorMs + 250
+            });
+          }
+
+          // Track 5: Subtitles
+          currentClips.push({
+            id: `sub_${i + 1}`,
+            track_type: 'Subtitles',
+            label: `[Caption ${i + 1}]`,
+            start_ms: cursorMs + 150,
+            end_ms: cursorMs + durMs - 150
+          });
+
+          cursorMs += durMs;
+        }
+
+        totalDurationMs = Math.max(1000, cursorMs);
+        if (playheadMs > totalDurationMs) playheadMs = totalDurationMs * 0.25;
+
+        // Track 3: Continuous Background Music Stem across entire timeline
+        currentClips.push({
+          id: 'music_master',
+          track_type: 'Music',
+          label: `Score Stem (Ducked ${duckDb.toFixed(0)} dB on VO)`,
+          start_ms: 0,
+          end_ms: totalDurationMs
+        });
+
+        // PacingValidator::analyze calculation
+        const totalDurSec = totalDurationMs / 1000;
+        const avgShot = totalDurSec / shotCount;
+        const uniqueTypes = new Set(currentShots.map(s => s.shot_type)).size;
+        const varietyScore = Math.min(1.0, uniqueTypes / 4.0);
+        let maxConsecStatic = 0, curStatic = 0;
+        for (const s of currentShots) {
+          if (s.motion === 'Static') {
+            curStatic++;
+            if (curStatic > maxConsecStatic) maxConsecStatic = curStatic;
+          } else {
+            curStatic = 0;
+          }
+        }
+        const slideshowRisk = maxConsecStatic >= 3;
+
+        // CostTracker calculation
+        const baseStageCost = pipe.stages.reduce((acc, s) => acc + s.cost, 0);
+        const diffusionCost = shotCount * 0.28;
+        const totalCost = baseStageCost + diffusionCost;
+        const remCost = budgetUsd - totalCost;
+
+        // Update UI Readouts
+        const duckGain = Math.pow(10, duckDb / 20);
+        document.getElementById('shots-val').textContent = `${shotCount} Shots (${totalDurSec.toFixed(1)}s)`;
+        document.getElementById('duck-val').textContent = `${duckDb.toFixed(1)} dB (${duckGain.toFixed(2)}x gain)`;
+        document.getElementById('budget-val').textContent = `$${budgetUsd.toFixed(2)} USD`;
+
+        const slideEl = document.getElementById('stat-slideshow');
+        if (slideshowRisk) {
+          slideEl.className = 'badge-warn';
+          slideEl.textContent = `HIGH (${maxConsecStatic} Static Shots)`;
+        } else {
+          slideEl.className = 'badge-pass';
+          slideEl.textContent = 'LOW (Dynamic Motion)';
+        }
+
+        document.getElementById('stat-variety').textContent = `${Math.round(varietyScore * 100)}% (${uniqueTypes} ShotTypes)`;
+        document.getElementById('stat-duration').textContent = `${avgShot.toFixed(2)}s // ${totalDurSec.toFixed(1)}s`;
+
+        const costEl = document.getElementById('stat-cost');
+        if (remCost < 0) {
+          costEl.className = 'badge-warn';
+          costEl.textContent = `$${totalCost.toFixed(2)} // OVER BUDGET ($${remCost.toFixed(2)})`;
+        } else {
+          costEl.className = 'badge-pass';
+          costEl.textContent = `$${totalCost.toFixed(2)} // +$${remCost.toFixed(2)} USD`;
+        }
+
+        document.getElementById('cli-preview').textContent =
+          `openmontage plan -s "${pipe.name}" -p ${pipeId} --budget ${budgetUsd.toFixed(1)} -o playbook.json`;
+
+        drawTimeline();
+      }
+
+      function drawTimeline() {
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width > 0 && canvas.width !== Math.floor(rect.width)) {
+          canvas.width = Math.floor(rect.width);
+        }
+        const W = canvas.width, H = canvas.height;
+        const isLight = htmlEl.getAttribute('data-theme') === 'light';
+        ctx.clearRect(0, 0, W, H);
+
+        const labelW = 118;
+        const trackW = W - labelW - 16;
+        const tracks = [
+          { type: 'Video',        label: 'T1: VIDEO',     color: '#3b82f6' },
+          { type: 'BRoll',        label: 'T2: B-ROLL',    color: '#0ea5e9' },
+          { type: 'Voiceover',    label: 'T3: VOICEOVER', color: '#16a34a' },
+          { type: 'Music',        label: 'T4: MUSIC MIX', color: '#8b5cf6' },
+          { type: 'SoundEffects', label: 'T5: SFX CUTS',  color: '#ea580c' },
+          { type: 'Subtitles',    label: 'T6: CAPTIONS',  color: '#64748b' }
+        ];
+
+        const headerH = 26;
+        const rowH = (H - headerH) / tracks.length;
+
+        // Time ruler header
+        ctx.fillStyle = isLight ? '#e4e4e7' : '#171717';
+        ctx.fillRect(0, 0, W, headerH);
+        ctx.font = '600 10px "JetBrains Mono", monospace';
+        ctx.fillStyle = isLight ? '#52525b' : '#a3a3a3';
+        ctx.fillText('TRACK // NLE', 10, 17);
+
+        const stepSec = Math.max(2, Math.round(totalDurationMs / 1000 / 8));
+        for (let s = 0; s <= totalDurationMs / 1000; s += stepSec) {
+          const x = labelW + (s * 1000 / totalDurationMs) * trackW;
+          ctx.fillText(`${s}s`, x + 2, 17);
+          ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)';
+          ctx.beginPath();
+          ctx.moveTo(x, headerH);
+          ctx.lineTo(x, H);
+          ctx.stroke();
+        }
+
+        // Draw each track lane & clips
+        const voClips = currentClips.filter(c => c.track_type === 'Voiceover');
+        const duckDb = parseFloat(duckEl.value);
+        const duckRatio = Math.pow(10, duckDb / 20);
+
+        tracks.forEach((tr, idx) => {
+          const y = headerH + idx * rowH;
+
+          // Track divider
+          ctx.strokeStyle = isLight ? '#d4d4d8' : '#262626';
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(W, y);
+          ctx.stroke();
+
+          // Track label column
+          ctx.fillStyle = isLight ? '#f4f4f5' : '#121212';
+          ctx.fillRect(0, y + 1, labelW - 4, rowH - 2);
+          ctx.fillStyle = isLight ? '#0a0a0a' : '#e5e5e5';
+          ctx.font = '700 10px "JetBrains Mono", monospace';
+          ctx.fillText(tr.label, 10, y + rowH * 0.55);
+
+          // Clips on this track
+          const clips = currentClips.filter(c => c.track_type === tr.type);
+          for (const clip of clips) {
+            const x0 = labelW + (clip.start_ms / totalDurationMs) * trackW;
+            const x1 = labelW + (clip.end_ms / totalDurationMs) * trackW;
+            const cw = Math.max(4, x1 - x0 - 2);
+
+            ctx.fillStyle = tr.color;
+            ctx.globalAlpha = isLight ? 0.82 : 0.78;
+            ctx.fillRect(x0, y + 6, cw, rowH - 12);
+            ctx.globalAlpha = 1.0;
+
+            // If this is the Music track, draw the dynamic ducking gain envelope
+            if (tr.type === 'Music') {
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              for (let px = 0; px <= cw; px += 3) {
+                const tMs = (px / trackW) * totalDurationMs;
+                const voActive = voClips.some(v => tMs >= v.start_ms && tMs <= v.end_ms);
+                const envY = voActive
+                  ? (y + rowH - 10 - (rowH - 22) * duckRatio)
+                  : (y + 11);
+                if (px === 0) ctx.moveTo(x0 + px, envY);
+                else ctx.lineTo(x0 + px, envY);
+              }
+              ctx.stroke();
+            }
+
+            if (cw > 42) {
+              ctx.fillStyle = '#ffffff';
+              ctx.font = '500 9.5px "JetBrains Mono", monospace';
+              ctx.fillText(clip.label.slice(0, Math.floor(cw / 6.5)), x0 + 5, y + rowH * 0.56);
+            }
+          }
+        });
+
+        // Draw Playhead Cursor
+        const playX = labelW + (playheadMs / totalDurationMs) * trackW;
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.moveTo(playX, 0);
+        ctx.lineTo(playX, H);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(playX - 5, 0, 10, 12);
+
+        const secs = (playheadMs / 1000).toFixed(3).padStart(6, '0');
+        document.getElementById('playhead-readout').innerHTML = `Playhead: <code>00:${secs}</code>`;
+      }
+
+      // Scrubbing Playhead on Canvas
+      let dragging = false;
+      const updateScrub = e => {
+        const rect = canvas.getBoundingClientRect();
+        const labelW = 118;
+        const trackW = rect.width - labelW - 16;
+        const relX = Math.max(0, Math.min(trackW, e.clientX - rect.left - labelW));
+        playheadMs = (relX / trackW) * totalDurationMs;
+        drawTimeline();
+      };
+      canvas.addEventListener('mousedown', e => { dragging = true; updateScrub(e); });
+      window.addEventListener('mouseup', () => { dragging = false; });
+      window.addEventListener('mousemove', e => { if (dragging) updateScrub(e); });
+
+      // Animated Playhead Loop
+      let lastTs = 0;
+      function animatePlayhead(ts) {
+        if (isPlaying) {
+          const dt = lastTs ? (ts - lastTs) : 16;
+          playheadMs = (playheadMs + dt) % totalDurationMs;
+          drawTimeline();
+        }
+        lastTs = ts;
+        requestAnimationFrame(animatePlayhead);
+      }
+
+      document.getElementById('play-timeline-btn').addEventListener('click', e => {
+        isPlaying = !isPlaying;
+        e.target.textContent = isPlaying ? '⏸ Pause Scrub' : '▶ Scrub Playhead';
+      });
+
+      [pipelineEl, aspectEl, presetEl, shotsEl, duckEl, budgetEl].forEach(el => {
+        el.addEventListener('input', rebuildProduction);
+      });
+      window.addEventListener('resize', drawTimeline);
+
+      // Export ProductionManifest JSON
+      document.getElementById('export-manifest-btn').addEventListener('click', () => {
+        const pipeId = pipelineEl.value;
+        const pipe = PIPELINES[pipeId];
+        const totalCost = pipe.stages.reduce((a, s) => a + s.cost, 0) + currentShots.length * 0.28;
+        const manifest = {
+          project_name: 'OpenMontage Studio Production',
+          pipeline_id: pipeId,
+          total_duration_seconds: Number((totalDurationMs / 1000).toFixed(2)),
+          total_shots: currentShots.length,
+          rendered_assets: [
+            {
+              name: 'master_video',
+              path: 'output/final_master.mp4',
+              asset_type: 'video/mp4',
+              duration_seconds: Number((totalDurationMs / 1000).toFixed(2)),
+              file_size_bytes: currentShots.length * 1650000
+            }
+          ],
+          cost_usd: Number(totalCost.toFixed(2))
+        };
+        const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `openmontage-${pipeId}-manifest.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+
+      // Export Shotlist JSON
+      document.getElementById('export-shots-btn').addEventListener('click', () => {
+        const blob = new Blob([JSON.stringify(currentShots, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `openmontage-shotlist-${currentShots.length}shots.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+
+      rebuildProduction();
+      requestAnimationFrame(animatePlayhead);
+    })();
+  </script>
+</body>
+</html>
