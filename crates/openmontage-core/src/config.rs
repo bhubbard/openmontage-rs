@@ -1,20 +1,15 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum AspectRatio {
     #[serde(rename = "16:9")]
+    #[default]
     Landscape16x9,
     #[serde(rename = "9:16")]
     Portrait9x16,
     #[serde(rename = "1:1")]
     Square1x1,
-}
-
-impl Default for AspectRatio {
-    fn default() -> Self {
-        AspectRatio::Landscape16x9
-    }
 }
 
 impl AspectRatio {

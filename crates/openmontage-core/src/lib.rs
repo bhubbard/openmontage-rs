@@ -8,6 +8,7 @@ pub mod manifest;
 pub mod pipeline;
 pub mod shot;
 pub mod timeline;
+pub mod video_gen;
 
 pub use audio::{AudioMixConfig, AudioMixer};
 pub use config::{AspectRatio, ProductionConfig};
@@ -19,3 +20,7 @@ pub use manifest::{ProductionManifest, RenderedAsset};
 pub use pipeline::{PipelineDefinition, PipelineRegistry, PipelineStage};
 pub use shot::{CameraMotion, PacingReport, PacingValidator, Shot, ShotType};
 pub use timeline::{Timeline, TimelineClip, TrackType};
+pub use video_gen::{
+    encode_base64, file_to_data_uri, load_env_with_dotenv, CinematicShotSpec, TimelineBeat,
+    VideoGenError, VideoGenOutput, VideoGenRequest, VideoOperation, VideoProvider,
+};

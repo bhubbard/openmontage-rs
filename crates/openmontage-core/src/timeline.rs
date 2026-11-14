@@ -53,11 +53,18 @@ impl Timeline {
     }
 
     pub fn total_duration_ms(&self) -> u64 {
-        self.clips.iter().map(|c| c.timeline_end_ms()).max().unwrap_or(0)
+        self.clips
+            .iter()
+            .map(|c| c.timeline_end_ms())
+            .max()
+            .unwrap_or(0)
     }
 
     pub fn clips_on_track(&self, track_type: TrackType) -> Vec<&TimelineClip> {
-        self.clips.iter().filter(|c| c.track_type == track_type).collect()
+        self.clips
+            .iter()
+            .filter(|c| c.track_type == track_type)
+            .collect()
     }
 
     /// Check if clips on the primary video track overlap

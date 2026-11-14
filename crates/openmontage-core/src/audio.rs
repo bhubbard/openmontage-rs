@@ -38,13 +38,18 @@ impl AudioMixer {
         let raw: Vec<f32> = match spec.sample_format {
             SampleFormat::Int => {
                 let max = (1i64 << (spec.bits_per_sample - 1)) as f32;
-                reader.samples::<i32>().map(|s| s.unwrap_or(0) as f32 / max).collect()
+                reader
+                    .samples::<i32>()
+                    .map(|s| s.unwrap_or(0) as f32 / max)
+                    .collect()
             }
             SampleFormat::Float => reader.samples::<f32>().map(|s| s.unwrap_or(0.0)).collect(),
         };
 
         let mono = if channels > 1 {
-            raw.chunks(channels).map(|c| c.iter().sum::<f32>() / channels as f32).collect()
+            raw.chunks(channels)
+                .map(|c| c.iter().sum::<f32>() / channels as f32)
+                .collect()
         } else {
             raw
         };
@@ -82,11 +87,7 @@ impl AudioMixer {
     }
 
     /// Mix voiceover and music with dynamic ducking and loudness normalization
-    pub fn mix_tracks(
-        voiceover: &[f32],
-        music: &[f32],
-        config: &AudioMixConfig,
-    ) -> Vec<f32> {
+    pub fn mix_tracks(voiceover: &[f32], music: &[f32], config: &AudioMixConfig) -> Vec<f32> {
         let max_len = voiceover.len().max(music.len());
         if max_len == 0 {
             return Vec::new();
@@ -99,7 +100,11 @@ impl AudioMixer {
         let window_size = (config.sample_rate as usize / 10).max(1);
 
         for i in 0..max_len {
-            let vo_sample = if i < voiceover.len() { voiceover[i] * config.voiceover_gain } else { 0.0 };
+            let vo_sample = if i < voiceover.len() {
+                voiceover[i] * config.voiceover_gain
+            } else {
+                0.0
+            };
 
             // Determine if voice is currently active in the local window
             let win_start = i.saturating_sub(window_size / 2);
@@ -159,7 +164,7 @@ mod tests {
     #[test]
     fn test_audio_mixing_and_ducking() {
         let mut voiceover = vec![0.0f32; 44100 * 2]; // 2 seconds
-        // Insert speech in the middle
+                                                     // Insert speech in the middle
         for s in &mut voiceover[22050..33075] {
             *s = 0.5;
         }

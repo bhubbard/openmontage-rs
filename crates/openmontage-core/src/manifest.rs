@@ -29,8 +29,8 @@ impl ProductionManifest {
                 std::fs::create_dir_all(parent)?;
             }
         }
-        let json = serde_json::to_string_pretty(self)
-            .context("Failed serializing production manifest")?;
+        let json =
+            serde_json::to_string_pretty(self).context("Failed serializing production manifest")?;
         std::fs::write(path_ref, json)?;
         Ok(())
     }
@@ -56,15 +56,13 @@ mod tests {
             pipeline_id: "cinematic".to_string(),
             total_duration_seconds: 30.0,
             total_shots: 8,
-            rendered_assets: vec![
-                RenderedAsset {
-                    name: "master_video".to_string(),
-                    path: PathBuf::from("master.mp4"),
-                    asset_type: "video/mp4".to_string(),
-                    duration_seconds: Some(30.0),
-                    file_size_bytes: 12500000,
-                },
-            ],
+            rendered_assets: vec![RenderedAsset {
+                name: "master_video".to_string(),
+                path: PathBuf::from("master.mp4"),
+                asset_type: "video/mp4".to_string(),
+                duration_seconds: Some(30.0),
+                file_size_bytes: 12500000,
+            }],
             cost_usd: 3.45,
         };
 

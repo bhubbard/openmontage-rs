@@ -193,8 +193,13 @@ fn test_audio_mixer_and_ducking() {
 
     let mut voiceover = vec![0.0f32; duration_samples];
     // Fill 1 second of voiceover activity
-    for i in (sample_rate / 2)..(sample_rate * 3 / 2) {
-        voiceover[i] = 0.5 * (i as f32 * 0.1).sin();
+    for (i, sample) in voiceover
+        .iter_mut()
+        .enumerate()
+        .take(sample_rate * 3 / 2)
+        .skip(sample_rate / 2)
+    {
+        *sample = 0.5 * (i as f32 * 0.1).sin();
     }
 
     let music = vec![0.4f32; duration_samples];

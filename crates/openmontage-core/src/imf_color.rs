@@ -111,24 +111,15 @@ impl TetrahedralLut3D {
                 if dg >= db {
                     let c100 = self.at(r0 + 1, g0, b0)[ch];
                     let c110 = self.at(r0 + 1, g0 + 1, b0)[ch];
-                    c000[ch]
-                        + dr * (c100 - c000[ch])
-                        + dg * (c110 - c100)
-                        + db * (c111[ch] - c110)
+                    c000[ch] + dr * (c100 - c000[ch]) + dg * (c110 - c100) + db * (c111[ch] - c110)
                 } else if dr >= db {
                     let c100 = self.at(r0 + 1, g0, b0)[ch];
                     let c101 = self.at(r0 + 1, g0, b0 + 1)[ch];
-                    c000[ch]
-                        + dr * (c100 - c000[ch])
-                        + db * (c101 - c100)
-                        + dg * (c111[ch] - c101)
+                    c000[ch] + dr * (c100 - c000[ch]) + db * (c101 - c100) + dg * (c111[ch] - c101)
                 } else {
                     let c001 = self.at(r0, g0, b0 + 1)[ch];
                     let c101 = self.at(r0 + 1, g0, b0 + 1)[ch];
-                    c000[ch]
-                        + db * (c001 - c000[ch])
-                        + dr * (c101 - c001)
-                        + dg * (c111[ch] - c101)
+                    c000[ch] + db * (c001 - c000[ch]) + dr * (c101 - c001) + dg * (c111[ch] - c101)
                 }
             } else if db > dg {
                 let c001 = self.at(r0, g0, b0 + 1)[ch];
